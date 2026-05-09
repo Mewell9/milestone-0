@@ -1,4 +1,3 @@
-# Your company context
 
 **Replace this file** with the CONTEXT for your assigned company:
 
