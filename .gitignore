@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+dist/
+coverage/
+*.log
+.env
+.env.local
+.env.*.local
+.DS_Store
+__pycache__/
+*.py[cod]
+
+# Incident analyzer export
+results.csv
