@@ -1,4 +1,8 @@
-"""TinyDB persistence for Brasaland suppliers."""
+"""Brasaland persistence: TinyDB suppliers plus SQLModel inventory re-exports.
+
+`get_db()` is the supplier TinyDB client. Do not reuse that name for Postgres.
+Inventory sessions come from `get_inventory_session` (one SQLModel Session per request).
+"""
 
 from __future__ import annotations
 
@@ -7,12 +11,22 @@ from typing import Any, Dict, List, Optional
 
 from tinydb import Query, TinyDB
 
+from app.errors import PersistenceError
+from app.inventory.db import (  # noqa: F401 — dual-connection re-exports for inventory
+    get_engine as get_inventory_engine,
+    get_inventory_session,
+    init_inventory_db,
+)
+
 DB_PATH = Path(__file__).resolve().parent / "data" / "suppliers.json"
 
 
 def get_db() -> TinyDB:
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    return TinyDB(DB_PATH)
+    try:
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        return TinyDB(DB_PATH)
+    except OSError as exc:
+        raise PersistenceError("Could not open the supplier directory.") from exc
 
 
 def doc_to_supplier(doc_id: int, doc: Dict[str, Any]) -> Dict[str, Any]:
@@ -52,31 +66,46 @@ def get_supplier(supplier_id: int) -> Optional[Dict[str, Any]]:
 
 
 def insert_supplier(data: Dict[str, Any]) -> Dict[str, Any]:
-    db = get_db()
-    table = db.table("suppliers")
-    doc_id = table.insert(data)
-    return doc_to_supplier(doc_id, data)
+    try:
+        db = get_db()
+        table = db.table("suppliers")
+        doc_id = table.insert(data)
+        return doc_to_supplier(doc_id, data)
+    except PersistenceError:
+        raise
+    except OSError as exc:
+        raise PersistenceError("Could not save the supplier.") from exc
 
 
 def update_supplier(
     supplier_id: int, patch: Dict[str, Any]
 ) -> Optional[Dict[str, Any]]:
-    db = get_db()
-    table = db.table("suppliers")
-    existing = table.get(doc_id=supplier_id)
-    if existing is None:
-        return None
-    merged = dict(existing)
-    merged.update(patch)
-    table.update(merged, doc_ids=[supplier_id])
-    return doc_to_supplier(supplier_id, merged)
+    try:
+        db = get_db()
+        table = db.table("suppliers")
+        existing = table.get(doc_id=supplier_id)
+        if existing is None:
+            return None
+        merged = dict(existing)
+        merged.update(patch)
+        table.update(merged, doc_ids=[supplier_id])
+        return doc_to_supplier(supplier_id, merged)
+    except PersistenceError:
+        raise
+    except OSError as exc:
+        raise PersistenceError("Could not update the supplier.") from exc
 
 
 def delete_supplier(supplier_id: int) -> bool:
-    db = get_db()
-    table = db.table("suppliers")
-    removed = table.remove(doc_ids=[supplier_id])
-    return bool(removed)
+    try:
+        db = get_db()
+        table = db.table("suppliers")
+        removed = table.remove(doc_ids=[supplier_id])
+        return bool(removed)
+    except PersistenceError:
+        raise
+    except OSError as exc:
+        raise PersistenceError("Could not delete the supplier.") from exc
 
 
 def find_by_name(name: str) -> Optional[Dict[str, Any]]:

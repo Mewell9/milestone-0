@@ -10,6 +10,7 @@ Shared Brasaland authentication for internal Next.js apps. Do not copy login/reg
 - `SessionNav` — profile, change-password, logout
 - `getToken` / `setToken` / `clearToken`
 - `authFetch` — Brasaland API calls with `Authorization: Bearer`
+- `ErrorBanner` — human-readable error with retry, home, and support contact
 
 ## Consume
 
@@ -28,3 +29,12 @@ transpilePackages: ["@repo/auth"]
 Set `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:8000`) for the Brasaland API. Talent Pipeline Tracker keeps `NEXT_PUBLIC_API_URL` for the 4Geeks Playground candidate API and must not send this JWT there.
 
 The public website (`uis/website`) does not import this package.
+
+## Tests
+
+Helper unit tests (`token.ts`, `client.ts`) run with Jest. Commands and cases: repo-root [`TESTING.md`](../../TESTING.md).
+
+```bash
+cd packages/auth
+npm test
+```
